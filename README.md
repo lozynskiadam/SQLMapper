@@ -1,11 +1,11 @@
-#Installation
+# Installation
 ```bash
 composer require lozynskiadam/sqlmapper
 ```
 
-#Introduction
+# Introduction
 
-#####Connecting to the database
+#### Connecting to the database
 
 If you don't have a PDO connection yet it can be established using **Connector** class:
 ```php
@@ -13,7 +13,7 @@ $PDO = new \SQLMapper\Connector($server, $user, $pass, $db);
 $conn = $PDO->getConnection();
 ```
 
-#####SQLMapper methods:
+#### SQLMapper methods:
 
 ```bash
 find ( array $where ) : array
@@ -23,7 +23,7 @@ add ( [ int $key ] ) : bool
 erase ( ) : bool;
 ```
 
-#####Example:
+#### Example:
 
 ```php
 require_once '../vendor/autoload.php';
