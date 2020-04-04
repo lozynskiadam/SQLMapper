@@ -1,0 +1,19 @@
+{
+  "name": "lozynskiadam/sqlmapper",
+  "description": "PDO SQL Mapper Library for PHP",
+  "type" : "library",
+  "authors": [
+    {
+      "name": "Adam Łożyński",
+      "email": "lozynskiadam@gmail.com"
+    }
+  ],
+  "autoload":{
+    "psr-4": {
+      "SQLMapper\\": "src/"
+    }
+  },
+  "require": {
+    "ext-pdo": "*"
+  }
+}
