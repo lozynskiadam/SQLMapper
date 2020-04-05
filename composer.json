@@ -1,6 +1,6 @@
 {
   "name": "lozynskiadam/sqlmapper",
-  "description": "PDO SQL Mapper Library for PHP",
+  "description": "PHP library to manage MySQL tables in active record pattern",
   "type" : "library",
   "authors": [
     {
@@ -15,6 +15,7 @@
   },
   "require": {
     "php": "^7.0",
-    "ext-pdo": "*"
+    "ext-pdo": "*",
+    "ext-mbstring": "*"
   }
 }

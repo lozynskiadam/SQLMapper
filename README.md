@@ -1,52 +1,54 @@
-# Installation
+# SQL Mapper
+PHP library to manage MySQL tables in active record pattern.
+
+## Installation
 ```bash
 composer require lozynskiadam/sqlmapper
 ```
 
-# Introduction
+## Requirements
+* PHP 7.0.1+
+* MySQL database
+* PDO extension
 
-#### Connecting to the database
+## Introduction
 
-If you don't have a PDO connection yet it can be established using **Connector** class:
-```php
-$PDO = new \SQLMapper\Connector($server, $user, $pass, $db);
-$conn = $PDO->getConnection();
-```
 
-#### SQLMapper methods:
-
+#### Usage
+SQL Mapper provides several methods that allows you to pass arguments into it to perform queries on your database without writing raw SQL.
 ```bash
 find ( array $where ) : array
 load ( array $where ) : object|false
 save ( ) : bool
-add ( [ int $key ] ) : bool
-erase ( ) : bool;
+add ( [ int $primaryKey ] ) : bool
+erase ( ) : bool
+reset ( ) : bool
 ```
 
-#### Example:
+#### Example
 
 ```php
 require_once '../vendor/autoload.php';
 
-$PDO = new \SQLMapper\Connector('localhost', 'root', '', $db);
+$PDO = new PDO("mysql:host=localhost;dbname=test", 'root, '');
 
 // get table
-$table = new \SQLMapper\SQLMapper($PDO->getConnection(), 'product');
+$table = new \SQLMapper\SQLMapper($PDO, 'product');
 
 // add new record
 $table->Name = 'Apple';
 $table->Price = '0.5';
 $table->add();
 
-// erase record where 'Id' = 5
-$table->load(array('Id = 5');
-$table->erase();
-
-// update records by name
+// update records by column
 $name = 'Apple';
 $newPrice = 0.99;
 foreach($table->find(array('Name = ?', $name)) as $record) {
   $record->Price = $newPrice;
   $record->save();
 }
+
+// erase record by column
+$table->load(array('Id = 5');
+$table->erase();
 ```
