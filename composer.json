@@ -1,6 +1,6 @@
 {
   "name": "lozynskiadam/sqlmapper",
-  "description": "PHP library to manage MySQL tables in active record pattern",
+  "description": "Simple PHP library to manage MySQL tables in active record pattern",
   "type" : "library",
   "authors": [
     {

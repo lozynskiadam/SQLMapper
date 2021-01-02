@@ -2,20 +2,17 @@
 
 namespace SQLMapper;
 
+use Exception;
 use PDO;
+use PDOStatement;
 
 /**
  * Class SQLMapper
  * @author Adam Łożyński
- * @created 2018-10-20
- * @updated 2020-04-05
  */
 class SQLMapper
 {
-  const ADD_INSTEAD_SAVING_WHEN_PRIMARY_KEY_VALUE_NOT_SET = true;
-
   const EXCEPTION_TABLE_NOT_EXISTS = 'Table `%s` does not exists or does not contain a primary key column.';
-  const EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_SAVING = 'Can not save - Primary key value not given.';
   const EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING = 'Can not erase - Primary key value not given.';
   const EXCEPTION_ADDING_PROBLEM = 'Problem occurred while inserting new row to table.';
   const EXCEPTION_SAVING_PROBLEM = 'Problem occurred while updating row.';
@@ -45,34 +42,25 @@ class SQLMapper
    * SQLMapper constructor.
    * @param $connection
    * @param $table
-   * @param bool $pk
-   * @throws \Exception
+   * @param $pk
+   * @throws Exception
    */
-  public function __construct($connection, $table, $pk = null)
+  public function __construct(PDO $connection, string $table, $pk = null)
   {
-    $this->SQLMapperProperties = new \stdClass();
-    $this->SQLMapperProperties->Connection = $connection;
-    $this->SQLMapperProperties->Table = $table;
-    $this->SQLMapperProperties->PrimaryKeyColumn = NULL;
-    $this->SQLMapperProperties->PrimaryKeyValue = NULL;
-    $this->SQLMapperProperties->Notices = array();
-
-    if($pk) {
-      return $this->loadById($pk);
-    }
-    return true;
+    $this->SQLMapperProperties = new SQLMapperProperties($connection, $table);
+    return $pk ? $this->loadById($pk) : true;
   }
 
   protected function findPrimaryKeyColumn()
   {
-    $sql = strtr("SHOW COLUMNS FROM %TABLE% WHERE COLUMNS.Key = '%KEY%'", array(
+    $sql = strtr("SHOW COLUMNS FROM %TABLE% WHERE COLUMNS.Key = '%KEY%'", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
-      '%KEY%' => SQLMapper::COLUMNS_KEY_PRIMARY
-    ));
+      '%KEY%' => self::COLUMNS_KEY_PRIMARY
+    ]);
 
-    /** @var \PDOStatement $row */
+    /** @var PDOStatement $row */
     if ($row = $this->SQLMapperProperties->Connection->query($sql)) {
-      $this->SQLMapperProperties->PrimaryKeyColumn = $row->fetch(PDO::FETCH_ASSOC)[SQLMapper::COLUMNS_KEY_COLUMN];
+      $this->SQLMapperProperties->PrimaryKeyColumn = $row->fetch(PDO::FETCH_ASSOC)[self::COLUMNS_KEY_COLUMN];
       return true;
     }
     return false;
@@ -81,7 +69,7 @@ class SQLMapper
   protected function clearProperties()
   {
     foreach ($this as $key => $property) {
-      if ($key !== SQLMapper::SQL_MAPPER_PROPERTIES) {
+      if ($key !== self::SQL_MAPPER_PROPERTIES) {
         unset($this->{$key});
       }
     }
@@ -90,33 +78,32 @@ class SQLMapper
   /**
    * @param array $where
    * @return array|bool
-   * @throws \Exception
+   * @throws Exception
    */
-  public function find($where = array())
+  public function find(array $where = [])
   {
-    $where = empty($where) ? array("1 = 1") : $where;
-    $whereQuery = $where[0];
-    $whereParams = array();
-    foreach($where as $key=>$param) {
-      $key > 0 ? $whereParams[] = $param : null;
+    $whereQuery = $where[0] ?: ["1 = 1"];
+    $whereParams = [];
+    foreach($where as $key=>$param) if($key > 0) {
+      $whereParams[] = $param;
     }
     if(mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-      throw new \Exception(SQLMapper::EXCEPTION_WRONG_PARAMS_AMOUNT);
+      throw new SQLMapperException(self::EXCEPTION_WRONG_PARAMS_AMOUNT);
     }
 
     $this->clearProperties();
     if (!$this->findPrimaryKeyColumn()) {
-      throw new \Exception(printf(SQLMapper::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
+      throw new SQLMapperException(printf(self::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
     }
 
-    $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", array(
+    $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%WHERE%' => $whereQuery
-    ));
+    ]);
 
-    /** @var \PDOStatement $preparedQuery */
+    /** @var PDOStatement $preparedQuery */
     $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
-    $result = array();
+    $result = [];
     if ($preparedQuery->execute($whereParams)) {
       foreach ($preparedQuery->fetchAll(PDO::FETCH_ASSOC) as $col => $value) {
         $newRow = new SQLMapper($this->SQLMapperProperties->Connection, $this->SQLMapperProperties->Table);
@@ -131,34 +118,33 @@ class SQLMapper
     return $result;
   }
 
-  /**
-   * @param array $where
-   * @return array|bool
-   * @throws \Exception
-   */
-  public function load($where = array())
+    /**
+     * @param array $where
+     * @return array|bool
+     * @throws Exception
+     */
+  public function load(array $where)
   {
-    $where = empty($where) ? array("1 = 1") : $where;
     $whereQuery = $where[0];
-    $whereParams = array();
-    foreach($where as $key=>$param) {
-      $key > 0 ? $whereParams[] = $param : null;
+    $whereParams = [];
+    foreach($where as $key=>$param) if($key > 0) {
+      $whereParams[] = $param;
     }
     if(mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-      throw new \Exception(SQLMapper::EXCEPTION_WRONG_PARAMS_AMOUNT);
+      throw new SQLMapperException(self::EXCEPTION_WRONG_PARAMS_AMOUNT);
     }
 
     $this->clearProperties();
     if (!$this->findPrimaryKeyColumn()) {
-      throw new \Exception(printf(SQLMapper::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
+      throw new SQLMapperException(printf(self::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
     }
 
-    $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", array(
+    $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%WHERE%' => $whereQuery
-    ));
+    ]);
 
-    /** @var \PDOStatement $preparedQuery */
+    /** @var PDOStatement $preparedQuery */
     $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
     if ($preparedQuery->execute($whereParams)) {
       $fetch = $preparedQuery->fetchAll(PDO::FETCH_ASSOC);
@@ -179,24 +165,24 @@ class SQLMapper
   /**
    * @param int|string $primary
    * @return mixed
-   * @throws \Exception
+   * @throws Exception
    */
   public function loadById($primary)
   {
     if(!is_numeric($primary)) {
-      throw new \Exception(SQLMapper::EXCEPTION_KEY_NOT_NUMERIC);
+      throw new SQLMapperException(self::EXCEPTION_KEY_NOT_NUMERIC);
     }
     $this->clearProperties();
 
     if (!$this->findPrimaryKeyColumn()) {
-      throw new \Exception(sprintf(SQLMapper::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
+      throw new SQLMapperException(sprintf(self::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
     }
 
-    $sql = strtr("SELECT * FROM %TABLE% WHERE %PK_COLUMN% = %PK_VALUE%", array(
+    $sql = strtr("SELECT * FROM %TABLE% WHERE %PK_COLUMN% = %PK_VALUE%", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%PK_COLUMN%' => $this->SQLMapperProperties->PrimaryKeyColumn,
       '%PK_VALUE%' => $primary
-    ));
+    ]);
 
     if ($result = $this->SQLMapperProperties->Connection->query($sql)->fetch(PDO::FETCH_ASSOC)) {
       $this->SQLMapperProperties->PrimaryKeyValue = $primary;
@@ -211,39 +197,34 @@ class SQLMapper
 
   /**
    * @return bool
-   * @throws \Exception
+   * @throws Exception
    */
   public function save()
   {
     if (!$this->SQLMapperProperties->PrimaryKeyValue) {
-      if(SQLMapper::ADD_INSTEAD_SAVING_WHEN_PRIMARY_KEY_VALUE_NOT_SET) {
-        $newKey = isset($this->{$this->SQLMapperProperties->PrimaryKeyColumn}) && !empty($this->{$this->SQLMapperProperties->PrimaryKeyColumn}) ? $this->{$this->SQLMapperProperties->PrimaryKeyColumn} : NULL;
-        return $this->add($newKey);
-      }
-      else{
-        throw new \Exception(SQLMapper::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_SAVING);
-      }
+      $newKey = isset($this->{$this->SQLMapperProperties->PrimaryKeyColumn}) && !empty($this->{$this->SQLMapperProperties->PrimaryKeyColumn}) ? $this->{$this->SQLMapperProperties->PrimaryKeyColumn} : NULL;
+      return $this->add($newKey);
     }
-    $set = array();
-    $values = array();
+    $set = [];
+    $values = [];
     foreach ($this as $key => $property) {
-      if ($key !== SQLMapper::SQL_MAPPER_PROPERTIES) {
+      if ($key !== self::SQL_MAPPER_PROPERTIES) {
         $set[] = $this->SQLMapperProperties->Table. '.' .$key . ' = ?';
         $values[] = $property;
       }
     }
 
-    $sql = strtr("UPDATE %TABLE% SET %SET% WHERE %PK_COLUMN% = %PK_VALUE%", array(
+    $sql = strtr("UPDATE %TABLE% SET %SET% WHERE %PK_COLUMN% = %PK_VALUE%", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%SET%' => implode(',', $set),
       '%PK_COLUMN%' => $this->SQLMapperProperties->PrimaryKeyColumn,
       '%PK_VALUE%' => $this->SQLMapperProperties->PrimaryKeyValue
-    ));
+    ]);
 
-    /** @var \PDOStatement $preparedQuery */
+    /** @var PDOStatement $preparedQuery */
     $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
     if (!$preparedQuery->execute($values)) {
-      throw new \Exception(SQLMapper::EXCEPTION_SAVING_PROBLEM);
+      throw new SQLMapperException(self::EXCEPTION_SAVING_PROBLEM);
     }
     return true;
   }
@@ -251,39 +232,39 @@ class SQLMapper
   /**
    * @param int|string $newKey
    * @return bool
-   * @throws \Exception
+   * @throws Exception
    */
   public function add($newKey = NULL)
   {
     if($newKey && !is_numeric($newKey)) {
-      throw new \Exception(SQLMapper::EXCEPTION_KEY_NOT_NUMERIC);
+      throw new SQLMapperException(self::EXCEPTION_KEY_NOT_NUMERIC);
     }
     if (!$this->findPrimaryKeyColumn()) {
-      throw new \Exception(printf(SQLMapper::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
+      throw new SQLMapperException(printf(self::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
     }
 
-    $columns = array();
-    $values = array();
-    $QM = array();
+    $columns = [];
+    $values = [];
+    $QM = [];
 
     foreach ($this as $key => $property) {
-      if ($key !== SQLMapper::SQL_MAPPER_PROPERTIES) {
+      if ($key !== self::SQL_MAPPER_PROPERTIES) {
         $columns[] = $this->SQLMapperProperties->Table. '.' .$key;
         $values[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $newKey : $property;
         $QM[] = '?';
       }
     }
 
-    $sql = strtr("INSERT INTO %TABLE% (%COLUMNS%) VALUES (%VALUES%)", array(
+    $sql = strtr("INSERT INTO %TABLE% (%COLUMNS%) VALUES (%VALUES%)", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%COLUMNS%' => implode(',', $columns),
       '%VALUES%' => implode(',', $QM)
-    ));
+    ]);
 
-    /** @var \PDOStatement $preparedQuery */
+    /** @var PDOStatement $preparedQuery */
     $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
     if (!$result = $preparedQuery->execute($values)) {
-      throw new \Exception(SQLMapper::EXCEPTION_ADDING_PROBLEM);
+      throw new SQLMapperException(self::EXCEPTION_ADDING_PROBLEM);
     }
     $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $this->SQLMapperProperties->Connection->lastInsertId();
     $this->SQLMapperProperties->PrimaryKeyValue = $this->{$this->SQLMapperProperties->PrimaryKeyColumn};
@@ -292,28 +273,31 @@ class SQLMapper
 
   /**
    * @return bool
-   * @throws \Exception
+   * @throws Exception
    */
   public function erase()
   {
     if (!$this->SQLMapperProperties->PrimaryKeyValue) {
-      throw new \Exception(SQLMapper::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING);
+      throw new SQLMapperException(self::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING);
     }
 
-    $sql = strtr("DELETE FROM %TABLE% WHERE %PK_COLUMN% = %PK_VALUE%", array(
+    $sql = strtr("DELETE FROM %TABLE% WHERE %PK_COLUMN% = %PK_VALUE%", [
       '%TABLE%' => $this->SQLMapperProperties->Table,
       '%PK_COLUMN%' => $this->SQLMapperProperties->PrimaryKeyColumn,
       '%PK_VALUE%' => $this->SQLMapperProperties->PrimaryKeyValue
-    ));
+    ]);
 
     if(!$this->SQLMapperProperties->Connection->query($sql)) {
-      throw new \Exception(SQLMapper::EXCEPTION_ERASING_PROBLEM);
+      throw new SQLMapperException(self::EXCEPTION_ERASING_PROBLEM);
     }
 
     $this->clearProperties();
     return true;
   }
 
+    /**
+     * @return bool
+     */
   public function reset()
   {
     $this->SQLMapperProperties->PrimaryKeyValue = NULL;
