@@ -41,14 +41,13 @@ $table->Price = '0.5';
 $table->add();
 
 // update records by column
-$name = 'Apple';
 $newPrice = 0.99;
-foreach($table->find(['Name = ?', $name]) as $record) {
+foreach($table->find(['Name = ?', 'Apple']) as $record) {
   $record->Price = $newPrice;
   $record->save();
 }
 
 // erase record by column
-$table->load(['Id = 5']);
+$table->load(['Name = ? AND Price = ?', 'Apple', '0.99']);
 $table->erase();
 ```
