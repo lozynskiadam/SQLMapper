@@ -12,17 +12,6 @@ use PDOStatement;
  */
 class SQLMapper
 {
-    const EXCEPTION_TABLE_NOT_EXISTS = 'Table `%s` does not exists or does not contain a primary key column.';
-    const EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING = 'Can not erase - Primary key value not given.';
-    const EXCEPTION_ADDING_PROBLEM = 'Problem occurred while inserting new row to table.';
-    const EXCEPTION_SAVING_PROBLEM = 'Problem occurred while updating row.';
-    const EXCEPTION_ERASING_PROBLEM = 'Problem occurred while erasing row.';
-    const EXCEPTION_WRONG_PARAMS_AMOUNT = 'Wrong parameters amount.';
-
-    const SQL_MAPPER_PROPERTIES = 'SQLMapperProperties';
-    const COLUMNS_KEY_COLUMN = 'Field';
-    const COLUMNS_KEY_PRIMARY = 'PRI';
-
     protected $SQLMapperProperties;
 
     /**
@@ -59,20 +48,20 @@ class SQLMapper
     {
         $sql = strtr("SHOW COLUMNS FROM %TABLE% WHERE COLUMNS.Key = '%KEY%'", [
           '%TABLE%' => $this->SQLMapperProperties->Table,
-          '%KEY%' => self::COLUMNS_KEY_PRIMARY
+          '%KEY%' => Consts::COLUMNS_KEY_PRIMARY
         ]);
 
         /** @var PDOStatement $row */
         if ($row = $this->SQLMapperProperties->Connection->query($sql)) {
-            return $row->fetch(PDO::FETCH_ASSOC)[self::COLUMNS_KEY_COLUMN];
+            return $row->fetch(PDO::FETCH_ASSOC)[Consts::COLUMNS_KEY_COLUMN];
         }
-        throw new SQLMapperException(printf(self::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
+        throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
     }
 
     protected function clearProperties()
     {
         foreach ($this as $key => $property) {
-            if ($key !== self::SQL_MAPPER_PROPERTIES) {
+            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
                 unset($this->{$key});
             }
         }
@@ -91,7 +80,7 @@ class SQLMapper
             $whereParams[] = $param;
         }
         if (mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-            throw new SQLMapperException(self::EXCEPTION_WRONG_PARAMS_AMOUNT);
+            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
         }
 
         $this->clearProperties();
@@ -131,7 +120,7 @@ class SQLMapper
             $whereParams[] = $param;
         }
         if (mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-            throw new SQLMapperException(self::EXCEPTION_WRONG_PARAMS_AMOUNT);
+            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
         }
 
         $this->clearProperties();
@@ -202,7 +191,7 @@ class SQLMapper
         $set = [];
         $values = [];
         foreach ($this as $key => $property) {
-            if ($key !== self::SQL_MAPPER_PROPERTIES) {
+            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
                 $set[] = $this->SQLMapperProperties->Table . '.' . $key . ' = ?';
                 $values[] = $property;
             }
@@ -218,7 +207,7 @@ class SQLMapper
         /** @var PDOStatement $preparedQuery */
         $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
         if (!$preparedQuery->execute($values)) {
-            throw new SQLMapperException(self::EXCEPTION_SAVING_PROBLEM);
+            throw new SQLMapperException(Consts::EXCEPTION_SAVING_PROBLEM);
         }
         return true;
     }
@@ -239,7 +228,7 @@ class SQLMapper
         }
 
         foreach ($this as $key => $property) {
-            if ($key !== self::SQL_MAPPER_PROPERTIES) {
+            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
                 $columns[] = $this->SQLMapperProperties->Table . '.' . $key;
                 $values[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $newKey : $property;
                 $QM[] = '?';
@@ -255,7 +244,7 @@ class SQLMapper
         /** @var PDOStatement $preparedQuery */
         $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
         if (!$result = $preparedQuery->execute($values)) {
-            throw new SQLMapperException(self::EXCEPTION_ADDING_PROBLEM);
+            throw new SQLMapperException(Consts::EXCEPTION_ADDING_PROBLEM);
         }
         $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $this->SQLMapperProperties->Connection->lastInsertId();
         $this->SQLMapperProperties->PrimaryKeyValue = $this->{$this->SQLMapperProperties->PrimaryKeyColumn};
@@ -269,7 +258,7 @@ class SQLMapper
     public function erase()
     {
         if (!$this->SQLMapperProperties->PrimaryKeyValue) {
-            throw new SQLMapperException(self::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING);
+            throw new SQLMapperException(Consts::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING);
         }
 
         $sql = strtr("DELETE FROM %TABLE% WHERE %PK_COLUMN% = ?", [
@@ -280,7 +269,7 @@ class SQLMapper
 
         $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
         if (!$result = $preparedQuery->execute($values)) {
-            throw new SQLMapperException(self::EXCEPTION_ERASING_PROBLEM);
+            throw new SQLMapperException(Consts::EXCEPTION_ERASING_PROBLEM);
         }
 
         $this->clearProperties();

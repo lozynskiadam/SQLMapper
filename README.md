@@ -1,5 +1,5 @@
 # SQL Mapper
-Simple PHP library to manage MySQL tables in active record pattern.
+Tiny PHP library to manage MySQL tables in active record pattern.
 
 ## Installation
 ```bash
