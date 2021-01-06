@@ -15,24 +15,21 @@ class SQLMapper extends SQLMapperCore
      */
     public function load(array $where)
     {
-        $whereQuery = $where[0];
-        $whereParams = [];
-        foreach ($where as $key => $param) if ($key > 0) {
-            $whereParams[] = $param;
-        }
-        if (mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
-        }
-
         $this->clearProperties();
 
         $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
           '%TABLE%' => $this->SQLMapperProperties->Table,
-          '%WHERE%' => $whereQuery
+          '%WHERE%' => $where[0]
         ]);
+        $params = [];
+        foreach ($where as $key => $param) if ($key > 0) {
+            $params[] = $param;
+        }
+        if (mb_substr_count($where[0], '?') !== count($params)) {
+            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
+        }
 
-        $this->clearProperties();
-        if ($row = ($this->openSQL($sql, $whereParams)[0] ?? false)) {
+        if ($row = ($this->openSQL($sql, $params)[0] ?? false)) {
             foreach ($row as $key => $property) {
                 $this->{$key} = $property;
             }
@@ -50,24 +47,23 @@ class SQLMapper extends SQLMapperCore
      */
     public function find(array $where = [])
     {
-        $whereQuery = $where[0] ?? "1 = 1";
-        $whereParams = [];
-        foreach ($where as $key => $param) if ($key > 0) {
-            $whereParams[] = $param;
-        }
-        if (mb_substr_count($whereQuery, '?') !== count($whereParams)) {
-            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
-        }
-
         $this->clearProperties();
 
+        $whereQuery = $where[0] ?? "1 = 1";
         $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
           '%TABLE%' => $this->SQLMapperProperties->Table,
           '%WHERE%' => $whereQuery
         ]);
+        $params = [];
+        foreach ($where as $key => $param) if ($key > 0) {
+            $params[] = $param;
+        }
+        if (mb_substr_count($whereQuery, '?') !== count($params)) {
+            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
+        }
 
         $result = [];
-        foreach ($this->openSQL($sql, $whereParams) as $row) {
+        foreach ($this->openSQL($sql, $params) as $row) {
             $instance = new SQLMapper($this->SQLMapperProperties->Connection, $this->SQLMapperProperties->Table);
             foreach ($row as $key => $property) {
                 $instance->{$key} = $property;
@@ -89,13 +85,15 @@ class SQLMapper extends SQLMapperCore
             $primaryKey = $this->{$this->SQLMapperProperties->PrimaryKeyColumn} ?: null;
             return $this->add($primaryKey);
         }
+
         $set = [];
         $params = [];
         foreach ($this as $key => $property) {
-            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
-                $set[] = $this->SQLMapperProperties->Table . '.' . $key . ' = ?';
-                $params[] = $property;
+            if ($key === Consts::SQL_MAPPER_PROPERTIES) {
+                continue;
             }
+            $set[] = $this->SQLMapperProperties->Table . '.' . $key . ' = ?';
+            $params[] = $property;
         }
 
         $sql = strtr("UPDATE %TABLE% SET %SET% WHERE %PK_COLUMN% = ?", [
@@ -118,7 +116,7 @@ class SQLMapper extends SQLMapperCore
      */
     public function add($primaryKey = null)
     {
-        if($primaryKey) {
+        if ($primaryKey) {
             $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $primaryKey;
         }
 
@@ -127,11 +125,12 @@ class SQLMapper extends SQLMapperCore
         $QM = [];
 
         foreach ($this as $key => $property) {
-            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
-                $columns[] = $this->SQLMapperProperties->Table . '.' . $key;
-                $params[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $primaryKey : $property;
-                $QM[] = '?';
+            if ($key === Consts::SQL_MAPPER_PROPERTIES) {
+                continue;
             }
+            $columns[] = $this->SQLMapperProperties->Table . '.' . $key;
+            $params[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $primaryKey : $property;
+            $QM[] = '?';
         }
 
         $sql = strtr("INSERT INTO %TABLE% (%COLUMNS%) VALUES (%VALUES%)", [
@@ -140,7 +139,7 @@ class SQLMapper extends SQLMapperCore
           '%VALUES%' => implode(',', $QM)
         ]);
 
-        if(!$this->execSQL($sql, $params)) {
+        if (!$this->execSQL($sql, $params)) {
             throw new SQLMapperException(Consts::EXCEPTION_ADDING_PROBLEM);
         }
 
@@ -163,7 +162,7 @@ class SQLMapper extends SQLMapperCore
         ]);
         $params = [$this->SQLMapperProperties->PrimaryKeyValue];
 
-        if(!$this->execSQL($sql, $params)) {
+        if (!$this->execSQL($sql, $params)) {
             throw new SQLMapperException(Consts::EXCEPTION_ERASING_PROBLEM);
         }
 
