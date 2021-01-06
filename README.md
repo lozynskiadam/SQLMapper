@@ -17,12 +17,12 @@ composer require lozynskiadam/sqlmapper
 #### Usage
 SQL Mapper provides several methods that allows you to pass arguments into it to perform queries on your database without writing raw SQL.
 ```bash
-find ( array $where ) : array
-load ( array $where ) : object|false
+load ( array $where ) : bool
+find ( [ array $where ] ) : array
 save ( ) : bool
 add ( [ int $primaryKey ] ) : bool
 erase ( ) : bool
-reset ( ) : bool
+reset ( ) : void
 ```
 
 #### Example
@@ -32,8 +32,8 @@ require_once '../vendor/autoload.php';
 
 $PDO = new PDO("mysql:host=localhost;dbname=test", 'root', '');
 
-// get table
-$table = new \SQLMapper\SQLMapper($PDO, 'product');
+// fetch table "products"
+$table = new \SQLMapper\SQLMapper($PDO, 'products');
 
 // add new record
 $table->Name = 'Apple';
@@ -47,7 +47,7 @@ foreach($table->find(['Name = ?', 'Apple']) as $record) {
   $record->save();
 }
 
-// erase record by column
+// erase record by columns
 $table->load(['Name = ? AND Price = ?', 'Apple', '0.99']);
 $table->erase();
 ```
