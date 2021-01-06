@@ -45,7 +45,7 @@ class SQLMapper extends SQLMapperCore
 
     /**
      * @param array $where
-     * @return array|bool
+     * @return array
      * @throws SQLMapperException
      */
     public function find(array $where = [])
@@ -86,8 +86,8 @@ class SQLMapper extends SQLMapperCore
     public function save()
     {
         if (!$this->SQLMapperProperties->PrimaryKeyValue) {
-            $PK = $this->{$this->SQLMapperProperties->PrimaryKeyColumn} ?: null;
-            return $this->add($PK);
+            $primaryKey = $this->{$this->SQLMapperProperties->PrimaryKeyColumn} ?: null;
+            return $this->add($primaryKey);
         }
         $set = [];
         $params = [];
@@ -112,14 +112,14 @@ class SQLMapper extends SQLMapperCore
     }
 
     /**
-     * @param int|string $PK
+     * @param int|string $primaryKey
      * @return bool
      * @throws SQLMapperException
      */
-    public function add($PK = null)
+    public function add($primaryKey = null)
     {
-        if($PK) {
-            $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $PK;
+        if($primaryKey) {
+            $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $primaryKey;
         }
 
         $columns = [];
@@ -129,7 +129,7 @@ class SQLMapper extends SQLMapperCore
         foreach ($this as $key => $property) {
             if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
                 $columns[] = $this->SQLMapperProperties->Table . '.' . $key;
-                $params[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $PK : $property;
+                $params[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $primaryKey : $property;
                 $QM[] = '?';
             }
         }
@@ -172,13 +172,12 @@ class SQLMapper extends SQLMapperCore
     }
 
     /**
-     * @return bool
+     * @return void
      */
     public function reset()
     {
         $this->SQLMapperProperties->PrimaryKeyValue = null;
         $this->clearProperties();
-        return true;
     }
 
 }
