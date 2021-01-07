@@ -49,17 +49,23 @@ class SQLMapper extends SQLMapperCore
     {
         $this->clearProperties();
 
-        $whereQuery = $where[0] ?? "1 = 1";
-        $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
-          '%TABLE%' => $this->SQLMapperProperties->Table,
-          '%WHERE%' => $whereQuery
-        ]);
         $params = [];
-        foreach ($where as $key => $param) if ($key > 0) {
-            $params[] = $param;
+        if($where) {
+            $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
+              '%TABLE%' => $this->SQLMapperProperties->Table,
+              '%WHERE%' => $where[0]
+            ]);
+            foreach ($where as $key => $param) if ($key > 0) {
+                $params[] = $param;
+            }
+            if (mb_substr_count($where[0], '?') !== count($params)) {
+                throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
+            }
         }
-        if (mb_substr_count($whereQuery, '?') !== count($params)) {
-            throw new SQLMapperException(Consts::EXCEPTION_WRONG_PARAMS_AMOUNT);
+        else {
+            $sql = strtr("SELECT * FROM %TABLE%", [
+              '%TABLE%' => $this->SQLMapperProperties->Table
+            ]);
         }
 
         $result = [];
@@ -89,9 +95,7 @@ class SQLMapper extends SQLMapperCore
         $set = [];
         $params = [];
         foreach ($this as $key => $property) {
-            if ($key === Consts::SQL_MAPPER_PROPERTIES) {
-                continue;
-            }
+            if ($key === Consts::SQL_MAPPER_PROPERTIES) continue;
             $set[] = $this->SQLMapperProperties->Table . '.' . $key . ' = ?';
             $params[] = $property;
         }
@@ -123,11 +127,8 @@ class SQLMapper extends SQLMapperCore
         $columns = [];
         $params = [];
         $QM = [];
-
         foreach ($this as $key => $property) {
-            if ($key === Consts::SQL_MAPPER_PROPERTIES) {
-                continue;
-            }
+            if ($key === Consts::SQL_MAPPER_PROPERTIES) continue;
             $columns[] = $this->SQLMapperProperties->Table . '.' . $key;
             $params[] = $key === $this->SQLMapperProperties->PrimaryKeyColumn ? $primaryKey : $property;
             $QM[] = '?';

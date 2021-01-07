@@ -23,7 +23,6 @@ abstract class SQLMapperCore
     }
 
     /**
-     * SQLMapper constructor.
      * @param $connection
      * @param $table
      * @param $PK
