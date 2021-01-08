@@ -1,175 +1,248 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+use SQLMapper\SQLMapper;
+use SQLMapper\SQLMapperException;
+
 class SQLMapperTest extends TestCase
 {
-    /** @var \SQLMapper\SQLMapper */
-    public $Table;
+    /** @var PDO */
+    protected static $PDO;
 
-    public $name = 'SQLMapperTestTable';
-    public $db = 'test';
-    public $user = 'root';
-    public $password = '';
+    /** @var SQLMapper */
+    protected static $SQLMapper;
 
-    public function setUpBeforeClass()
+    protected static $name = 'SQLMapperTestTable';
+    protected static $db = 'test';
+    protected static $user = 'root';
+    protected static $password = '';
+
+    public static function setUpBeforeClass() : void
     {
-        $this->PDO = new PDO("mysql:host=localhost;dbname=$this->db", $this->user, $this->password);
-        $this->PDO->exec("DROP TABLE IF EXISTS `$this->name`;");
-        $this->PDO->exec("CREATE TABLE `$this->name` (`Id` INT NOT NULL AUTO_INCREMENT, `Name` VARCHAR(10) NULL, `Price` DECIMAL(8,2) NULL, PRIMARY KEY (`Id`));");
-        $this->PDO->exec("INSERT INTO `$this->name` (`Id`, `Name`, `Price`) VALUES ('1', 'First', '100.00')");
-        $this->PDO->exec("INSERT INTO `$this->name` (`Id`, `Name`, `Price`) VALUES ('2', 'Second', '16.00')");
-        $this->PDO->exec("INSERT INTO `$this->name` (`Id`, `Name`, `Price`) VALUES ('3', 'Third', '140.40')");
-        $this->PDO->exec("INSERT INTO `$this->name` (`Id`, `Name`, `Price`) VALUES ('4', 'Fourth', '44.10')");
-        $this->PDO->exec("INSERT INTO `$this->name` (`Id`, `Name`) VALUES ('5', 'Fifth')");
-        $this->Table = new SQLMapper\SQLMapper($this->PDO, $this->name);
+        self::$PDO = new PDO("mysql:host=localhost;dbname=" .self::$db, self::$user, self::$password);
+        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$name. "`;");
+        self::$PDO->exec("CREATE TABLE `" .self::$name. "` (`Id` INT NOT NULL AUTO_INCREMENT, `Name` VARCHAR(10) NULL, `Price` DECIMAL(8,2) NULL, PRIMARY KEY (`Id`));");
+        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('1', 'First', '100.00')");
+        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('2', 'Second', '16.00')");
+        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('3', 'Third', '140.40')");
+        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('4', 'Fourth', '44.10')");
+        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`) VALUES ('5', 'Fifth')");
+        self::$SQLMapper = new SQLMapper(self::$PDO, self::$name);
     }
 
-    public function tearDownAfterClass()
+    public static function tearDownAfterClass() : void
     {
-        $this->PDO->exec("DROP TABLE IF EXISTS `$this->name`;");
+        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$name. "`;");
+        self::$PDO = null;
     }
 
-    public function testLoad()
+    public function testLoad_WithQueryVariations()
     {
-        $this->Table->load(['Name = ?', 'First']);
-        $this->assertEqual($this->Table->Id, '1');
+        self::$SQLMapper->load(['Price IS NULL']);
+        $this->assertSame('5', self::$SQLMapper->Id);
 
-        $this->Table->load(['Id > 1']);
-        $this->assertEqual($this->Table->Id, '2');
+        self::$SQLMapper->load(['Price IS NOT NULL']);
+        $this->assertSame('1', self::$SQLMapper->Id);
 
-        $this->Table->load(['Price IS NULL']);
-        $this->assertEqual($this->Table->Id, '5');
+        self::$SQLMapper->load(['Id IS NULL']);
+        $this->assertSame(null, self::$SQLMapper->Id);
 
-        $this->Table->load(['Price IS NOT NULL']);
-        $this->assertEqual($this->Table->Id, '1');
-
-        $this->Table->load(['Name = ?', 'NotExistingName']);
-        $this->assertEqual($this->Table->Id, null);
+        self::$SQLMapper->load(['Id > 1']);
+        $this->assertSame('2', self::$SQLMapper->Id);
     }
 
-    public function testFind()
+    public function testLoad_WhenQueryIsNotDetermined()
     {
-        $getIds = function ($obj) {
-            return $obj->Id;
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->load([]);
+    }
+
+    public function testLoad_WithBindedParameter()
+    {
+        self::$SQLMapper->load(['Name = ?', 'First']);
+        $this->assertSame('1', self::$SQLMapper->Id);
+
+        self::$SQLMapper->load(['Id = ? AND Name = ?', '1', 'First']);
+        $this->assertSame('1', self::$SQLMapper->Id);
+
+        self::$SQLMapper->load(['Name = ?', 'Last']);
+        $this->assertSame(null, self::$SQLMapper->Id);
+
+        self::$SQLMapper->load(['Id = ? OR Name = ?', '100', 'Second']);
+        $this->assertSame('2', self::$SQLMapper->Id);
+    }
+
+    public function testLoad_WhenBindedParametersAmountIsGreaterThanPlaceholdersAmount()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->load(['Name = ?', '1', '2']);
+    }
+
+    public function testLoad_WhenBindedParametersAmountIsLowerThanPlaceholdersAmount()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->load(['Name = ? OR Name = ?', '1']);
+    }
+
+    public function testFind_WithQueryVariations()
+    {
+        $getIds = function($arg) {
+            return array_map(function ($obj) { return $obj->Id; }, $arg);
         };
 
-        $ids = array_map($getIds, $this->Table->find());
-        $this->assertEqual($ids, ['1','2','3','4','5']);
+        $ids = $getIds(self::$SQLMapper->find());
+        $this->assertSame(['1','2','3','4','5'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find([]));
-        $this->assertEqual($ids, ['1','2','3','4','5']);
+        $ids = $getIds(self::$SQLMapper->find([]));
+        $this->assertSame(['1','2','3','4','5'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find(['Name = ?', 'First']));
-        $this->assertEqual($ids, ['1']);
+        $ids = $getIds(self::$SQLMapper->find(['Price > 50']));
+        $this->assertSame(['1', '3'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find(['Id = ? OR Name = ?', '1', 'Second']));
-        $this->assertEqual($ids, ['1', '2']);
+        $ids = $getIds(self::$SQLMapper->find(['Price IS NOT NULL']));
+        $this->assertSame(['1', '2', '3', '4'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find(['Id = ? AND Name = ?', '1', 'Second']));
-        $this->assertEqual($ids, []);
+        $ids = $getIds(self::$SQLMapper->find(['Price IS NULL']));
+        $this->assertSame(['5'], $ids);
+    }
 
-        $ids = array_map($getIds, $this->Table->find(['Price > 50']));
-        $this->assertEqual($ids, ['1', '3']);
+    public function testFind_WithBindedParameter()
+    {
+        $getIds = function($arg) {
+            return array_map(function ($obj) { return $obj->Id; }, $arg);
+        };
 
-        $ids = array_map($getIds, $this->Table->find(['Price > ?', 50]));
-        $this->assertEqual($ids, ['1', '3']);
+        $ids = $getIds(self::$SQLMapper->find(['Name = ?', 'First']));
+        $this->assertSame(['1'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find(['Price IS NOT NULL']));
-        $this->assertEqual($ids, ['1', '2', '3', '4']);
+        $ids = $getIds(self::$SQLMapper->find(['Id = ? OR Name = ?', '1', 'Second']));
+        $this->assertSame(['1', '2'], $ids);
 
-        $ids = array_map($getIds, $this->Table->find(['Price IS NULL']));
-        $this->assertEqual($ids, ['5']);
+        $ids = $getIds(self::$SQLMapper->find(['Id = ? AND Name = ?', '1', 'Second']));
+        $this->assertSame([], $ids);
 
-        $this->expectException($this->Table->find, ['Id = ? AND Name = ?', '1']);
+        $ids = $getIds(self::$SQLMapper->find(['Price > ?', 50]));
+        $this->assertSame(['1', '3'], $ids);
+    }
+
+    public function testFind_WhenBindedParametersAmountIsGreaterThanPlaceholdersAmount()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->find(['Id = ?', '1', '2']);
+    }
+
+    public function testFind_WhenBindedParametersAmountIsLowerThanPlaceholdersAmount()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->find(['Id = ? AND Name = ?', '1']);
     }
 
     public function testSave()
     {
-        $this->PDO->beginTransaction();
+        self::$PDO->beginTransaction();
 
-        $this->Table->load(['Id = ?', 1]);
-        $this->Table->Name = 'Updated';
-        $this->Table->save();
-        $this->assertEqual($this->Table->Name, 'Updated');
+        self::$SQLMapper->load(['Id = ?', 1]);
+        self::$SQLMapper->Name = 'Updated';
+        self::$SQLMapper->save();
+        $this->assertSame('Updated', self::$SQLMapper->Name);
 
-        $this->Table->load(['Id = ?', 1]);
-        $this->assertEqual($this->Table->Name, 'Updated');
+        self::$SQLMapper->load(['Id = ?', 1]);
+        $this->assertSame('Updated', self::$SQLMapper->Name);
 
-        $this->Table->Name = 'AAAAAAAAAABBBBB'; // exceed column length
-        $this->Table->save();
-        $this->assertEqual($this->Table->Name, 'AAAAAAAAAABBBBB');
+        self::$PDO->rollBack();
+    }
 
-        $this->Table->load(['Id = ?', 1]);
-        $this->assertEqual($this->Table->Name, 'AAAAAAAAAA');
+    public function testSave_WhenIteratingOverResult()
+    {
+        self::$PDO->beginTransaction();
 
-        $this->Table->Id = '10';
-        $this->Table->save();
-        $this->assertEqual($this->Table->Id, '10');
-
-        $this->Table->load(['Id = ?', 1]);
-        $this->assertEqual($this->Table->Id, null);
-
-        $this->Table->load(['Id = ?', 10]);
-        $this->assertEqual($this->Table->Id, '10');
-
-        foreach($this->Table->find() as $row) {
+        foreach(self::$SQLMapper->find() as $row) {
             $row->Price = null;
             $row->save();
         }
-        foreach($this->Table->find() as $row) {
-            $this->assertEqual($row->Price, null);
+        foreach(self::$SQLMapper->find() as $row) {
+            $this->assertSame(null, $row->Price);
         }
 
-        $this->Table->Id = 2;
-        $this->expectException($this->Table->save);
-
-        $this->PDO->rollBack();
+        self::$PDO->rollBack();
     }
 
-    public function testAdd()
+    public function testSave_WhenLengthIsExceeded()
     {
-        $this->PDO->beginTransaction();
+        self::$PDO->beginTransaction();
 
-        $this->Table->reset();
-        $this->Table->Name = '6th';
-        $this->Table->add();
-        $this->assertGreater($this->Table->Id, 5);
+        self::$SQLMapper->load(['Id = ?', 1]);
+        self::$SQLMapper->Name = 'AAAAAAAAAABBBBB'; // exceed column length
+        self::$SQLMapper->save();
+        $this->assertSame('AAAAAAAAAABBBBB', self::$SQLMapper->Name);
 
-        $this->Table->reset();
-        $this->Table->Name = '7th';
-        $this->Table->add(7);
-        $this->assertEqual($this->Table->Id, '7');
+        self::$SQLMapper->load(['Id = ?', 1]);
+        $this->assertSame('AAAAAAAAAA', self::$SQLMapper->Name);
 
-        $this->Table->load(['Id = ?', '1']);
-        $this->Table->Name = '8th';
-        $this->Table->add();
-        $this->assertGreater($this->Table->Id, 5);
+        self::$PDO->rollBack();
+    }
 
-        $this->Table->Name = '7th';
-        $this->expectException($this->Table->add, '1');
+    public function testSave_WhenPrimaryKeyAlreadyExists()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->reset();
+        self::$SQLMapper->Id = 2;
+        self::$SQLMapper->save();
+    }
 
-        $this->PDO->rollBack();
+    public function testAdd_WhenAddingWithoutPrimaryKey()
+    {
+        self::$PDO->beginTransaction();
+
+        self::$SQLMapper->reset();
+        self::$SQLMapper->Name = '6th';
+        self::$SQLMapper->add();
+        $this->assertGreaterThan(5, self::$SQLMapper->Id);
+
+        self::$PDO->rollBack();
+    }
+
+    public function testAdd_WhenAddingWithPrimaryKey()
+    {
+        self::$PDO->beginTransaction();
+
+        self::$SQLMapper->load(['Id = ?', '1']);
+        self::$SQLMapper->Name = '8th';
+        self::$SQLMapper->add();
+        $this->assertGreaterThan(5, self::$SQLMapper->Id);
+
+        self::$PDO->rollBack();
+    }
+
+    public function testAdd_WhenPrimaryKeyAlreadyExistsException()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->Name = '7th';
+        self::$SQLMapper->add('1');
     }
 
     public function testErase()
     {
-        $this->PDO->beginTransaction();
+        self::$PDO->beginTransaction();
 
-        $this->Table->load(['Id = ?', 1]);
-        $this->Table->erase();
-        $this->assertEqual($this->Table->Id, null);
+        self::$SQLMapper->load(['Id = ?', 1]);
+        self::$SQLMapper->erase();
+        $this->assertSame(null, self::$SQLMapper->Id);
 
-        $this->Table->load(['Id = ?', 1]);
-        $this->assertEqual($this->Table->Id, null);
+        self::$SQLMapper->load(['Id = ?', 1]);
+        $this->assertSame(null, self::$SQLMapper->Id);
 
-        $this->PDO->rollBack();
+        self::$PDO->rollBack();
     }
 
     public function testReset()
     {
-        $this->Table->load(['Id = ?', 1]);
-        $this->Table->reset();
-        $this->assertEqual($this->Table->Id, null);
-        $this->assertEqual($this->Table->Name, null);
+        self::$SQLMapper->load(['Id = ?', 1]);
+        $this->assertSame('1', self::$SQLMapper->Id);
+
+        self::$SQLMapper->reset();
+        $this->assertSame(null, self::$SQLMapper->Id);
+        $this->assertSame(null, self::$SQLMapper->Name);
     }
 
 }

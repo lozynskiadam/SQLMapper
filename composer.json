@@ -14,8 +14,11 @@
     }
   },
   "require": {
-    "php": "^7.0",
+    "php": "^7.1",
     "ext-pdo": "*",
     "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "9"
   }
 }
