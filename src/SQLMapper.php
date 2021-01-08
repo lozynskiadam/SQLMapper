@@ -17,6 +17,10 @@ class SQLMapper extends SQLMapperCore
     {
         $this->clearProperties();
 
+        if(empty($where)) {
+            throw new SQLMapperException(Consts::EXCEPTION_QUERY_NOT_DETERMINED);
+        }
+
         $sql = strtr("SELECT * FROM %TABLE% WHERE %WHERE%", [
           '%TABLE%' => $this->SQLMapperProperties->Table,
           '%WHERE%' => $where[0]
