@@ -74,7 +74,7 @@ class SQLMapper extends SQLMapperCore
 
         $result = [];
         foreach ($this->openSQL($sql, $params) as $row) {
-            $instance = new SQLMapper($this->SQLMapperProperties->Connection, $this->SQLMapperProperties->Table);
+            $instance = new SQLMapper($this->SQLMapperProperties->PDO, $this->SQLMapperProperties->Table, $this->SQLMapperProperties->Schema);
             foreach ($row as $key => $property) {
                 $instance->{$key} = $property;
             }
@@ -148,7 +148,7 @@ class SQLMapper extends SQLMapperCore
             throw new SQLMapperException(Consts::EXCEPTION_ADDING_PROBLEM);
         }
 
-        return $this->load([$this->SQLMapperProperties->PrimaryKeyColumn . ' = ?', $this->SQLMapperProperties->Connection->lastInsertId()]);
+        return $this->load([$this->SQLMapperProperties->PrimaryKeyColumn . ' = ?', $this->SQLMapperProperties->PDO->lastInsertId()]);
     }
 
     /**

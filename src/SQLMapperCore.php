@@ -8,7 +8,7 @@ use PDOStatement;
 
 abstract class SQLMapperCore
 {
-    protected $SQLMapperProperties;
+    public $SQLMapperProperties;
 
     /**
      * @param $property
@@ -23,16 +23,16 @@ abstract class SQLMapperCore
     }
 
     /**
-     * @param $connection
-     * @param $table
-     * @param $PK
-     * @throws Exception
+     * @param PDO $pdo
+     * @param string $table
+     * @param array|null $schema
+     * @throws SQLMapperException
      */
-    public function __construct(PDO $connection, string $table, $PK = null)
+    public function __construct(PDO $pdo, string $table, array $schema = null)
     {
-        $this->SQLMapperProperties = new SQLMapperProperties($connection, $table);
+        $this->SQLMapperProperties = new SQLMapperProperties($pdo, $table, $schema);
         $this->SQLMapperProperties->PrimaryKeyColumn = $this->getPrimaryKeyColumn();
-        return $PK ? $this->load([$this->SQLMapperProperties->PrimaryKeyColumn. ' = ?', $PK]) : true;
+        return true;
     }
 
     protected function getPrimaryKeyColumn()
@@ -43,7 +43,7 @@ abstract class SQLMapperCore
         ]);
 
         /** @var PDOStatement $row */
-        if ($row = $this->SQLMapperProperties->Connection->query($sql)) {
+        if ($row = $this->SQLMapperProperties->PDO->query($sql)) {
             return $row->fetch(PDO::FETCH_ASSOC)[Consts::COLUMNS_KEY_COLUMN];
         }
         throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
@@ -61,14 +61,14 @@ abstract class SQLMapperCore
     protected function execSQL($sql, $params = [])
     {
         /** @var PDOStatement $preparedQuery */
-        $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
+        $preparedQuery = $this->SQLMapperProperties->PDO->prepare($sql);
         return $preparedQuery->execute($params);
     }
 
     protected function openSQL($sql, $params = [], $fetch = PDO::FETCH_ASSOC)
     {
         /** @var PDOStatement $preparedQuery */
-        $preparedQuery = $this->SQLMapperProperties->Connection->prepare($sql);
+        $preparedQuery = $this->SQLMapperProperties->PDO->prepare($sql);
         if ($preparedQuery->execute($params)) {
             return $preparedQuery->fetchAll($fetch);
         }
