@@ -13,7 +13,7 @@ class SQLMapper extends SQLMapperCore
      * @return bool
      * @throws SQLMapperException
      */
-    public function load(array $where)
+    public function load(array $where) : bool
     {
         $this->clearProperties();
 
@@ -49,7 +49,7 @@ class SQLMapper extends SQLMapperCore
      * @return array
      * @throws SQLMapperException
      */
-    public function find(array $where = [])
+    public function find(array $where = []) : array
     {
         $this->clearProperties();
 
@@ -89,7 +89,7 @@ class SQLMapper extends SQLMapperCore
      * @return bool
      * @throws SQLMapperException
      */
-    public function save()
+    public function save() : bool
     {
         if (!$this->SQLMapperProperties->PrimaryKeyValue) {
             $primaryKey = $this->{$this->SQLMapperProperties->PrimaryKeyColumn} ?: null;
@@ -118,11 +118,11 @@ class SQLMapper extends SQLMapperCore
     }
 
     /**
-     * @param int|string $primaryKey
+     * @param int|string|null $primaryKey
      * @return bool
      * @throws SQLMapperException
      */
-    public function add($primaryKey = null)
+    public function add($primaryKey = null) : bool
     {
         if ($primaryKey) {
             $this->{$this->SQLMapperProperties->PrimaryKeyColumn} = $primaryKey;
@@ -155,7 +155,7 @@ class SQLMapper extends SQLMapperCore
      * @return bool
      * @throws SQLMapperException
      */
-    public function erase()
+    public function erase() : bool
     {
         if (!$this->SQLMapperProperties->PrimaryKeyValue) {
             throw new SQLMapperException(Consts::EXCEPTION_PRIMARY_KEY_VALUE_NOT_SET_WHILE_ERASING);
@@ -178,7 +178,7 @@ class SQLMapper extends SQLMapperCore
     /**
      * @return void
      */
-    public function reset()
+    public function reset() : void
     {
         $this->SQLMapperProperties->PrimaryKeyValue = null;
         $this->clearProperties();
