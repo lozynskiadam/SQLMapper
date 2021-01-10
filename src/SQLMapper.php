@@ -15,7 +15,7 @@ class SQLMapper extends SQLMapperCore
      */
     public function load(array $where) : bool
     {
-        $this->clearProperties();
+        $this->resetProperties();
 
         if(empty($where)) {
             throw new SQLMapperException(Consts::EXCEPTION_QUERY_NOT_DETERMINED);
@@ -51,7 +51,7 @@ class SQLMapper extends SQLMapperCore
      */
     public function find(array $where = []) : array
     {
-        $this->clearProperties();
+        $this->resetProperties();
 
         $params = [];
         if($where) {
@@ -78,7 +78,6 @@ class SQLMapper extends SQLMapperCore
             foreach ($row as $key => $property) {
                 $instance->{$key} = $property;
             }
-            $instance->SQLMapperProperties->PrimaryKeyColumn = $this->SQLMapperProperties->PrimaryKeyColumn;
             $instance->SQLMapperProperties->PrimaryKeyValue = $row[$this->SQLMapperProperties->PrimaryKeyColumn];
             $result[] = $instance;
         }
@@ -171,7 +170,7 @@ class SQLMapper extends SQLMapperCore
             throw new SQLMapperException(Consts::EXCEPTION_ERASING_PROBLEM);
         }
 
-        $this->clearProperties();
+        $this->resetProperties();
         return true;
     }
 
@@ -181,7 +180,7 @@ class SQLMapper extends SQLMapperCore
     public function reset() : void
     {
         $this->SQLMapperProperties->PrimaryKeyValue = null;
-        $this->clearProperties();
+        $this->resetProperties();
     }
 
 }

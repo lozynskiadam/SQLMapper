@@ -18,7 +18,18 @@ class SQLMapperProperties
         $this->Table = $table;
         if(!($this->Schema = $schema)) {
             $database = $this->PDO->query('SELECT DATABASE()')->fetchColumn();
-            $this->Schema = $this->PDO->query('DESCRIBE ' .$database. '.' .$table)->fetchAll(PDO::FETCH_ASSOC);
+            if(!$query = $this->PDO->query('DESCRIBE ' .$database. '.' .$table)) {
+                throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $table));
+            }
+            $this->Schema = $query->fetchAll(PDO::FETCH_OBJ);
+        }
+        foreach($this->Schema as $column) {
+            if($column->{Consts::SCHEMA_COLUMN_KEY} == Consts::SCHEMA_COLUMN_KEY_VALUE_PRIMARY) {
+                $this->PrimaryKeyColumn = $column->Field;
+            }
+        }
+        if(!$this->PrimaryKeyColumn) {
+            throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_CONTAIN_PRIMARY_KEY_COLUMN, $table));
         }
     }
 }

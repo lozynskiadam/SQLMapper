@@ -2,25 +2,12 @@
 
 namespace SQLMapper;
 
-use Exception;
 use PDO;
 use PDOStatement;
 
 abstract class SQLMapperCore
 {
-    public $SQLMapperProperties;
-
-    /**
-     * @param $property
-     * @return mixed
-     */
-    public function __get($property)
-    {
-        if (!isset($this->{$property})) {
-            $this->{$property} = null;
-        }
-        return $this->{$property};
-    }
+    protected $SQLMapperProperties;
 
     /**
      * @param PDO $pdo
@@ -31,30 +18,14 @@ abstract class SQLMapperCore
     public function __construct(PDO $pdo, string $table, array $schema = null)
     {
         $this->SQLMapperProperties = new SQLMapperProperties($pdo, $table, $schema);
-        $this->SQLMapperProperties->PrimaryKeyColumn = $this->getPrimaryKeyColumn();
+        $this->resetProperties();
         return true;
     }
 
-    protected function getPrimaryKeyColumn()
+    protected function resetProperties()
     {
-        $sql = strtr("SHOW COLUMNS FROM %TABLE% WHERE COLUMNS.Key = '%KEY%'", [
-          '%TABLE%' => $this->SQLMapperProperties->Table,
-          '%KEY%' => Consts::COLUMNS_KEY_PRIMARY
-        ]);
-
-        /** @var PDOStatement $row */
-        if ($row = $this->SQLMapperProperties->PDO->query($sql)) {
-            return $row->fetch(PDO::FETCH_ASSOC)[Consts::COLUMNS_KEY_COLUMN];
-        }
-        throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $this->SQLMapperProperties->Table));
-    }
-
-    protected function clearProperties()
-    {
-        foreach ($this as $key => $property) {
-            if ($key !== Consts::SQL_MAPPER_PROPERTIES) {
-                unset($this->{$key});
-            }
+        foreach($this->SQLMapperProperties->Schema as $column) {
+            $this->{$column->{Consts::SCHEMA_COLUMN_FIELD}} = null;
         }
     }
 
