@@ -36,6 +36,24 @@ class SQLMapperTest extends TestCase
         self::$PDO = null;
     }
 
+    public function testConstruct_WhenPassingTableThatNotExists()
+    {
+        $this->expectException(SQLMapperException::class);
+        new SQLMapper(self::$PDO, 'not_existing_table');
+    }
+
+    public function testGetter_WhenGettingPropertyThatDoesNotMatchAnyColumn()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->NotExistingColumn;
+    }
+
+    public function testSetter_WhenSettingPropertyThatDoesNotMatchAnyColumn()
+    {
+        $this->expectException(SQLMapperException::class);
+        self::$SQLMapper->NotExistingColumn = '1';
+    }
+
     public function testLoad_WithQueryVariations()
     {
         self::$SQLMapper->load(['Price IS NULL']);

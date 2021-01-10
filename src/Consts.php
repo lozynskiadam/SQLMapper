@@ -14,6 +14,7 @@ class Consts
     const EXCEPTION_ERASING_PROBLEM = 'Problem occurred while erasing row.';
     const EXCEPTION_WRONG_PARAMS_AMOUNT = 'Wrong parameters amount.';
     const EXCEPTION_QUERY_NOT_DETERMINED = 'Query is not determined.';
+    const EXCEPTION_COLUMN_IN_TABLE_NOT_EXISTS = 'Column `%s` not exists in table %s.';
 
     const SCHEMA_COLUMN_FIELD = 'Field';
     const SCHEMA_COLUMN_TYPE = 'Type';
