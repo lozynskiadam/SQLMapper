@@ -25,7 +25,7 @@ class SQLMapperProperties
         }
         foreach($this->Schema as $column) {
             if($column->{Consts::SCHEMA_COLUMN_KEY} == Consts::SCHEMA_COLUMN_KEY_VALUE_PRIMARY) {
-                $this->PrimaryKeyColumn = $column->Field;
+                $this->PrimaryKeyColumn = $column->{Consts::SCHEMA_COLUMN_FIELD};
             }
         }
         if(!$this->PrimaryKeyColumn) {
