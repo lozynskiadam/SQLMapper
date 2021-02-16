@@ -25,7 +25,7 @@ abstract class SQLMapperCore
     public function __get($property)
     {
         if(!$column = $this->getColumnSchema($property)) {
-            throw new SQLMapperException(printf(Consts::EXCEPTION_COLUMN_IN_TABLE_NOT_EXISTS, $property, $this->SQLMapperProperties->Table));
+            throw new SQLMapperException(sprintf(Consts::EXCEPTION_COLUMN_IN_TABLE_NOT_EXISTS, $property, $this->SQLMapperProperties->Table));
         }
         return $this->{$property};
     }
@@ -33,7 +33,7 @@ abstract class SQLMapperCore
     public function __set($property, $value)
     {
         if(!$column = $this->getColumnSchema($property)) {
-            throw new SQLMapperException(printf(Consts::EXCEPTION_COLUMN_IN_TABLE_NOT_EXISTS, $property, $this->SQLMapperProperties->Table));
+            throw new SQLMapperException(sprintf(Consts::EXCEPTION_COLUMN_IN_TABLE_NOT_EXISTS, $property, $this->SQLMapperProperties->Table));
         }
         $this->{$property} = $value;
     }

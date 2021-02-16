@@ -19,7 +19,7 @@ class SQLMapperProperties
         if(!($this->Schema = $schema)) {
             $database = $this->PDO->query('SELECT DATABASE()')->fetchColumn();
             if(!$query = $this->PDO->query('DESCRIBE ' .$database. '.' .$table)) {
-                throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $table));
+                throw new SQLMapperException(sprintf(Consts::EXCEPTION_TABLE_NOT_EXISTS, $table));
             }
             $this->Schema = $query->fetchAll(PDO::FETCH_OBJ);
         }
@@ -29,7 +29,7 @@ class SQLMapperProperties
             }
         }
         if(!$this->PrimaryKeyColumn) {
-            throw new SQLMapperException(printf(Consts::EXCEPTION_TABLE_NOT_CONTAIN_PRIMARY_KEY_COLUMN, $table));
+            throw new SQLMapperException(sprintf(Consts::EXCEPTION_TABLE_NOT_CONTAIN_PRIMARY_KEY_COLUMN, $table));
         }
     }
 }
