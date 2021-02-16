@@ -12,27 +12,25 @@ class SQLMapperTest extends TestCase
     /** @var SQLMapper */
     protected static $SQLMapper;
 
-    protected static $name = 'SQLMapperTestTable';
-    protected static $db = 'test';
-    protected static $user = 'root';
-    protected static $password = '';
+    /** @var string */
+    protected static $table_name = 'SQLMapperTestTable';
 
     public static function setUpBeforeClass() : void
     {
-        self::$PDO = new PDO("mysql:host=localhost;dbname=" .self::$db, self::$user, self::$password);
-        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$name. "`;");
-        self::$PDO->exec("CREATE TABLE `" .self::$name. "` (`Id` INT NOT NULL AUTO_INCREMENT, `Name` VARCHAR(10) NULL, `Price` DECIMAL(8,2) NULL, PRIMARY KEY (`Id`));");
-        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('1', 'First', '100.00')");
-        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('2', 'Second', '16.00')");
-        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('3', 'Third', '140.40')");
-        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`, `Price`) VALUES ('4', 'Fourth', '44.10')");
-        self::$PDO->exec("INSERT INTO `" .self::$name. "` (`Id`, `Name`) VALUES ('5', 'Fifth')");
-        self::$SQLMapper = new SQLMapper(self::$PDO, self::$name);
+        self::$PDO = new PDO("mysql:host=" .$GLOBALS['DB_HOST']. ";dbname=" .$GLOBALS['DB_DATABASE'], $GLOBALS['DB_USER'], $GLOBALS['DB_PASSWORD']);
+        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$table_name. "`;");
+        self::$PDO->exec("CREATE TABLE `" .self::$table_name. "` (`Id` INT NOT NULL AUTO_INCREMENT, `Name` VARCHAR(10) NULL, `Price` DECIMAL(8,2) NULL, PRIMARY KEY (`Id`));");
+        self::$PDO->exec("INSERT INTO `" .self::$table_name. "` (`Id`, `Name`, `Price`) VALUES ('1', 'First', '100.00')");
+        self::$PDO->exec("INSERT INTO `" .self::$table_name. "` (`Id`, `Name`, `Price`) VALUES ('2', 'Second', '16.00')");
+        self::$PDO->exec("INSERT INTO `" .self::$table_name. "` (`Id`, `Name`, `Price`) VALUES ('3', 'Third', '140.40')");
+        self::$PDO->exec("INSERT INTO `" .self::$table_name. "` (`Id`, `Name`, `Price`) VALUES ('4', 'Fourth', '44.10')");
+        self::$PDO->exec("INSERT INTO `" .self::$table_name. "` (`Id`, `Name`) VALUES ('5', 'Fifth')");
+        self::$SQLMapper = new SQLMapper(self::$PDO, self::$table_name);
     }
 
     public static function tearDownAfterClass() : void
     {
-        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$name. "`;");
+        self::$PDO->exec("DROP TABLE IF EXISTS `" .self::$table_name. "`;");
         self::$PDO = null;
     }
 
