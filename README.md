@@ -7,7 +7,7 @@ composer require lozynskiadam/sqlmapper
 ```
 
 ## Requirements
-* PHP >= 7.0
+* PHP >= 7.4
 * MySQL database
 * PDO extension
 
